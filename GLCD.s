@@ -1,8 +1,17 @@
 #include <xc.inc>
+
+global	GLCD_Setup, GLCD_Send_I, GLCD_Send_D, LCM_Reset
     
+extrn	vert_line
+
 psect	udata_acs   ; named variables in access ram
 
-W2	    ds	1   ; Second WREG 
+W2:		ds 1	; Second WREG 
+LCD_cnt_l:	ds 1	; reserve 1 byte for variable LCD_cnt_l
+LCD_cnt_h:	ds 1	; reserve 1 byte for variable LCD_cnt_h
+LCD_cnt_ms:	ds 1	; reserve 1 byte for ms counter
+y_pos_cnt:	ds 1	; reserve 1 byte for the y-position counter
+x_pos_cnt:	ds 1	; reserve 1 byte for the y-position counter
 
 GLCD_CS1    EQU	0   ; GLCD Chip Select 1 (1-64)
 GLCD_CS2    EQU	1   ; GLCD Chip Select 2 (65-128)
@@ -13,7 +22,6 @@ GLCD_RST    EQU	5   ; GLCD Reset, (high=reset, low=no reset)
     
 Y_addr	EQU 01000000B	; Y-address (add num 0-63 to this to select address)
 X_addr	EQU 10111000B	; X-address (add num 0-7 to this to select address)
-write_d EQU 
 
 psect glcd_code, class=CODE
     
@@ -35,9 +43,22 @@ GLCD_Setup:
     bsf	    LATB, GLCD_CS2, A 
     bcf	    LATB, GLCD_E, A	; sect enable to low by default
     
+    movlw   01000000B
+    movwf   y_pos_cnt, A	; reset y_position counter (y=0)
+    movlw   10111000B
+    movwf   x_pos_cnt, A	; reset x_position counter (x=0)
+    
     movlw   250	
     call    LCD_delay_ms
     
+    movlw   00111111B		; Turn on display
+    call    GLCD_Send_I
+    
+    ;call    vert_line
+    call    LCM_Reset
+    ;call    vert_line
+    return
+
 GLCD_Send_I:
     movwf   LATD, A		; WREG taken as instruction
     bcf	    LATB, GLCD_RS, A	; set to low since instruction
@@ -45,21 +66,47 @@ GLCD_Send_I:
     call    GLCD_Enable
     return
     
-   GLCD_Send_D:
+GLCD_Send_D:
     movwf   LATD, A		; WREG taken as data
     bsf	    LATB, GLCD_RS, A	; set to high since data
     bcf	    LATB, GLCD_RW, A	; set to low since write
     call    GLCD_Enable
     return
     
+LCM_Reset:
+    movlw   10111000B
+    call    GLCD_Send_I	    ; Select x=0 column
+    reset_loop1:
+	movf    x_pos_cnt, W, A
+	call	GLCD_Send_I	    ; Select y=0 column
+	incf    x_pos_cnt, F, A ; increment the x-pos counter
+	reset_loop2:
+	    movlw   00000000B   
+	    call    GLCD_Send_D
+	
+	    incf    y_pos_cnt, F, A ; increment the y-pos counter
+	    movlw   01111111B	    ; This is the max y-value
+	    cpfseq  y_pos_cnt, A    ; Check if counter has reached max val
+	    bra	    reset_loop2	  ; If it hasn't loop back to loop2 until it has
+	    
+	    movlw   10111111B	    ; This is the max x-value
+	    cpfsgt  x_pos_cnt, A    ; Check if counter has reached max val
+	    bra	    reset_loop1	  ; If it hasn't loop back to loop1 until it has
+    movlw   01000000B
+    movwf   y_pos_cnt, A	; reset y_position counter
+    movlw   10111000B
+    movwf   x_pos_cnt, A	; reset x_position counter  
+    return
+    
 GLCD_Enable:		    ; Pulse enable bit GLCD_E
-    movwf   W2		    ; Move whatever is in WREG to W2 to avoid issues
+    movwf   W2, A	    ; Move whatever is in WREG to W2 to avoid issues
     movlw   1
-    call    LCD_delay_ms
+    call    LCD_delay_x4us
     bsf	    PORTB, GLCD_E, A
-    call    LCD_delay_ms
+    movlw   1
+    call    LCD_delay_x4us
     bcf	    PORTB, GLCD_E, A
-    movf    W2, W	    ; Move W2 back to W
+    movf    W2, W, A	    ; Move W2 back to W
     return
 
 
@@ -82,3 +129,10 @@ LCD_delay_x4us:		    ; delay given in chunks of 4 microsecond in W
 	andwf	LCD_cnt_l, F, A ; keep high nibble in LCD_cnt_l
 	call	LCD_delay
 	return
+	
+LCD_delay:			; delay routine	4 instruction loop == 250ns	    
+	movlw 	0x00		; W=0
+lcdlp1:	decf 	LCD_cnt_l, F, A	; no carry when 0x00 -> 0xff
+	subwfb 	LCD_cnt_h, F, A	; no carry when 0x00 -> 0xff
+	bc 	lcdlp1		; carry, then loop again
+	return			; carry reset so return
