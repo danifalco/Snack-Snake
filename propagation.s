@@ -2,9 +2,9 @@
 
 global	propagation_setup, init_position, propagate, dsp_pos
 global	mv_right, mv_left, mv_up, mv_down
-global	remain, temp, counter
+global	remain, temp, counter, x_pos, y_pos
 
-extrn	GLCD_Send_I, GLCD_Send_D, vert_line
+extrn	GLCD_Send_I, GLCD_Send_D, GLCD_Read, vert_line
     
 psect udata_acs	    ; named variables in access RAM
 
@@ -54,7 +54,7 @@ propagate:  ; Propagate: 1 - Right, 2 - Left, 3 - Up, 4 - Down
     
     ;movff    x_pos, x_prev, A
     ;movff    y_pos, y_prev, A
-    clrf    remain
+    clrf    remain, A
     cpfseq  one, A
     bra	    left
     call    mv_right
@@ -94,19 +94,19 @@ dsp_pos:
     movff   x_pos, x_temp, A	; Move the x position to its temporary variable
     
     bcf	    CARRY		; Clear the carry flag ready for rotation
-    rrcf    x_temp, 1		; Divide x_temp by 8 (i.e. divide by 2 3 times)
+    rrcf    x_temp, F, A	; Divide x_temp by 8 (i.e. divide by 2 3 times)
     btfsc   CARRY
-    bsf	    remain, 0
+    bsf	    remain, 0, A
     
     bcf	    CARRY		; Clear the carry flag ready for rotation
-    rrcf    x_temp, 1		; Divide x_temp by 8 (i.e. divide by 2 3 times)
+    rrcf    x_temp, F, A		; Divide x_temp by 8 (i.e. divide by 2 3 times)
     btfsc   CARRY
-    bsf	    remain, 1
+    bsf	    remain, 1, A
     
     bcf	    CARRY		; Clear the carry flag ready for rotation
-    rrcf    x_temp, 1		; Divide x_temp by 8 (i.e. divide by 2 3 times)
+    rrcf    x_temp, F, A		; Divide x_temp by 8 (i.e. divide by 2 3 times)
     btfsc   CARRY
-    bsf	    remain, 2
+    bsf	    remain, 2, A
     ; Now x_temp has been divided by 8 (so this will be the x page) and the 
     ; carry variable contains the pixel to light up within this page (column)
     
@@ -118,20 +118,37 @@ dsp_pos:
     movwf   temp, A
     movlw   0x0
     pos_loop:
-	cpfsgt	remain
+	cpfsgt	remain, A
 	bra	end_display
 	addlw	1
-	rlncf	temp
+	rlncf	temp, F, A
 	bra	pos_loop
 	
 end_display:
-    movf    temp, W, A
+    ;movf    temp, W, A
+    movff   temp, remain	; Free temp by moving temp to remain
+    call    GLCD_Read		; Read contents from screen in selected area
+    movwf   temp, A		; Move the read result into temp variable
+    
+    movf    y_pos, W, A		; Move new y position into WREG
+    addlw   Y_POS_COMMAND	; Sum with the command vlaue and store in W
+    call    GLCD_Send_I		; Reset y position since GLCD_Read +1'ed it
+    
+    movf    temp, W, A		; Restore value from GLCD_Read into WREG
+    
+    ;movf    remain, W, A
+    iorwf   remain, W, A	; OR W and remain, store in W
+    ;movf    remain, W, A
     call    GLCD_Send_D
+    
+    movf    y_pos, W, A		; Move new y position into WREG
+    addlw   Y_POS_COMMAND	; Sum with the command vlaue and store in W
+    call    GLCD_Send_I		; Reset y position since GLCD_Read +1'ed it
     
     return    
     
 mv_right:
-    movlw   62
+    movlw   63
     cpfslt  y_pos, A
     return
     incf    y_pos, A
