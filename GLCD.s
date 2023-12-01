@@ -1,6 +1,7 @@
 #include <xc.inc>
 
-global	GLCD_Setup, GLCD_Send_I, GLCD_Send_D, LCM_Reset
+global	GLCD_Setup, GLCD_Send_I, GLCD_Send_D, LCM_Reset, LCD_delay_ms, GLCD_Read
+global	out_data
     
 extrn	vert_line
 
@@ -12,6 +13,7 @@ LCD_cnt_h:	ds 1	; reserve 1 byte for variable LCD_cnt_h
 LCD_cnt_ms:	ds 1	; reserve 1 byte for ms counter
 y_pos_cnt:	ds 1	; reserve 1 byte for the y-position counter
 x_pos_cnt:	ds 1	; reserve 1 byte for the y-position counter
+out_data:	ds 1	; reserve 1 byte for the data output (when reading GLCD)
 
 GLCD_CS1    EQU	0   ; GLCD Chip Select 1 (1-64)
 GLCD_CS2    EQU	1   ; GLCD Chip Select 2 (65-128)
@@ -73,6 +75,34 @@ GLCD_Send_D:
     call    GLCD_Enable
     return
     
+GLCD_Read:	
+    movlw   0xFF		; PortD all inputs
+    movwf   TRISD, A
+    ;clrf    LATD, A
+    
+    bsf	    LATB, GLCD_RS, A	; set to high since data
+    bsf	    LATB, GLCD_RW, A	; set to high since read
+    
+    movlw   1
+    call    LCD_delay_x4us
+    bsf	    LATB, GLCD_E, A	; Start enable pulse
+    movlw   200
+    call    LCD_delay_ms
+    
+    movff   PORTD, out_data	; temporarily output to out_data
+    movff   out_data, PORTE
+    
+    bcf	    LATB, GLCD_E, A	; End enable pulse
+    bcf	    LATB, GLCD_RW, A	; set to low since write
+    
+    movlw   10
+    call    LCD_delay_ms
+    
+    movlw   0x00		; PortD all outputs
+    movwf   TRISD, A
+    movf    out_data, W, A	; Output data to WREG
+    return
+    
 LCM_Reset:
     movlw   10111000B
     call    GLCD_Send_I	    ; Select x=0 column
@@ -102,10 +132,10 @@ GLCD_Enable:		    ; Pulse enable bit GLCD_E
     movwf   W2, A	    ; Move whatever is in WREG to W2 to avoid issues
     movlw   1
     call    LCD_delay_x4us
-    bsf	    PORTB, GLCD_E, A
+    bsf	    LATB, GLCD_E, A
     movlw   1
     call    LCD_delay_x4us
-    bcf	    PORTB, GLCD_E, A
+    bcf	    LATB, GLCD_E, A
     movf    W2, W, A	    ; Move W2 back to W
     return
 
