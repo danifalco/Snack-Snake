@@ -58,24 +58,24 @@ propagate:  ; Propagate: 1 - Right, 2 - Left, 3 - Up, 4 - Down
     cpfseq  one, A
     bra	    left
     call    mv_right
-    call    dsp_pos	    ; Branch to display position
+    bra	    dsp_pos	    ; Branch to display position
     
 left:
     cpfseq  two, A
     bra	    up
     call    mv_left
-    call    dsp_pos
+    bra	    dsp_pos
     
 up: 
     cpfseq  three, A
     bra	    down
     call    mv_up
-    call    dsp_pos
+    bra	    dsp_pos
    
 down:
-    cpfseq  four, A
+    ;cpfseq  four, A
     call    mv_down
-    call    dsp_pos
+    bra	    dsp_pos
 
 dsp_pos:
     movf    y_pos, W, A		; Move new y position into WREG
