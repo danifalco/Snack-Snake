@@ -3,6 +3,7 @@
 global	propagation_setup, init_position, propagate, dsp_pos
 global	mv_right, mv_left, mv_up, mv_down
 global	remain, temp, counter, x_pos, y_pos
+global	x_row_inst, y_col_inst
 
 extrn	GLCD_Send_I, GLCD_Send_D, GLCD_Read, vert_line
     
@@ -14,6 +15,8 @@ x_prev:	    ds	1   ; reserve 1 byte for previous x position
 y_prev:	    ds	1   ; reserve 1 byte for previous y position
 x_temp:	    ds	1   ; reserve 1 temporary byte for x
 y_temp:	    ds	1   ; reserve 1 temporary byte for y
+x_row_inst: ds	1   ; reserve 1 byte for the x row instruction 
+y_col_inst: ds  1   ; reserve 1 byte for the y col instruction 
 remain:	    ds	1   ; reserve 1 byte for the division remainder
 temp:	    ds	1   ; reserve 1 byte for a versatile temp variable
 counter:    ds	1   ; reserve 1 byte for a counter variable
@@ -43,7 +46,7 @@ propagation_setup:
     return    
 
 init_position:
-    movlw   0x0
+    movlw   0xA
     movwf   x_pos, A
     movlw   0x0
     movwf   y_pos, A
@@ -80,7 +83,7 @@ down:
 dsp_pos:
     movf    y_pos, W, A		; Move new y position into WREG
     addlw   Y_POS_COMMAND	; Sum with the command vlaue and store in W
-    call    GLCD_Send_I		; Send instruction to select y
+    movwf   y_col_inst, A
     
     ; ****************delete******************
 ;    movlw   10111000B
@@ -112,7 +115,7 @@ dsp_pos:
     
     movf    x_temp, W, A	; Move new x position into WREG
     addlw   X_POS_COMMAND	; Sum with the command value and store in W
-    call    GLCD_Send_I		; Send instruction to select y
+    movwf   x_row_inst, A
     
     movlw   00000001B
     movwf   temp, A
@@ -125,14 +128,34 @@ dsp_pos:
 	bra	pos_loop
 	
 end_display:
-    ;movf    temp, W, A
     movff   temp, remain	; Free temp by moving temp to remain
+    
+    movf    y_col_inst, W, A
+    call    GLCD_Send_I		; Select y column
+    movf    x_row_inst, W, A
+    call    GLCD_Send_I		; Select x column
     call    GLCD_Read		; Read contents from screen in selected area
+    movf    y_col_inst, W, A
+    call    GLCD_Send_I		; Select y column
+    movf    x_row_inst, W, A
+    call    GLCD_Send_I		; Select x column
+    call    GLCD_Read		; Read contents from screen in selected area
+    movf    y_col_inst, W, A
+    call    GLCD_Send_I		; Select y column
+    movf    x_row_inst, W, A
+    call    GLCD_Send_I		; Select x column
+    call    GLCD_Read		; Read contents from screen in selected area
+    movf    y_col_inst, W, A
+    call    GLCD_Send_I		; Select y column
+    movf    x_row_inst, W, A
+    call    GLCD_Send_I		; Select x column
+    call    GLCD_Read		; Read contents from screen in selected area
+    
+    
     movwf   temp, A		; Move the read result into temp variable
     
-    movf    y_pos, W, A		; Move new y position into WREG
-    addlw   Y_POS_COMMAND	; Sum with the command vlaue and store in W
-    call    GLCD_Send_I		; Reset y position since GLCD_Read +1'ed it
+    movf    y_col_inst, W, A
+    call    GLCD_Send_I		; Select y column
     
     movf    temp, W, A		; Restore value from GLCD_Read into WREG
     
@@ -156,16 +179,16 @@ mv_right:
     
 mv_left:
     movlw   0x0
-    cpfseq  y_pos, A
+    cpfsgt  y_pos, A
     return
     decf    y_pos, A
     return
     
 mv_up:
     movlw   0x0
-    cpfseq  x_pos, A
+    cpfsgt  x_pos, A
     return
-    decf    x_pos, A
+    decf    x_pos, F, A
     return
     
 mv_down:
@@ -174,3 +197,4 @@ mv_down:
     return
     incf    x_pos, A
     return
+
