@@ -32,6 +32,9 @@ GLCD_Setup:
     movlw   11000000B	    ; PortB 0:5 all outputs
     movwf   TRISB, A
     
+    movlw   01010101B
+    movwf   LATD, A
+    
     clrf    LATD, A
     movlw   0x0		    ; PortD all outputs
     movwf   TRISD, A
@@ -39,7 +42,9 @@ GLCD_Setup:
     movlw   40
     call    LCD_delay_ms    ; TODO check that 40ms is the correct wait for LCD
 			    ; to start properly
-			    
+    bcf	    LATB, GLCD_RST, A
+    movlw   10
+    call    LCD_delay_ms
     bsf	    LATB, GLCD_RST, A
     bcf	    LATB, GLCD_CS1, A	; select left side (by clearing the cs1 bit)
     bsf	    LATB, GLCD_CS2, A 
@@ -86,8 +91,16 @@ GLCD_Read:
     movlw   1
     call    LCD_delay_x4us
     bsf	    LATB, GLCD_E, A	; Start enable pulse
-    movlw   200
-    call    LCD_delay_ms
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    ;movlw   200
+    ;call    LCD_delay_ms
     
     movff   PORTD, out_data	; temporarily output to out_data
     movff   out_data, PORTE
