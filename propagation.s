@@ -21,6 +21,8 @@ y_col_inst: ds  1   ; reserve 1 byte for the y col instruction
 remain:	    ds	1   ; reserve 1 byte for the division remainder
 temp:	    ds	1   ; reserve 1 byte for a versatile temp variable
 counter:    ds	1   ; reserve 1 byte for a counter variable
+x_tail_old: ds	1   ; reserve 1 byte for the previous tail x-position
+y_tail_old: ds	1   ; reserve 1 byte for the previous tail y-position
     
 one:	    ds	1
 two:	    ds  1
@@ -93,7 +95,13 @@ down:
     bra	    dsp_pos_head
 
 dsp_pos_head:  ; Figure out the row and column of the snake head
-    movf    y_pos, W, A		; Move new y position into WREG
+    call    ret_x_tail
+    movwf   x_tail_old, A	; Store the old tail position into its var
+    call    ret_y_tail
+    movwf   y_tail_old, A	; Store the old tail position into its var
+    
+    call    ret_y_head		; Move new y position into WREG
+    movwf   y_pos, A
     addlw   Y_POS_COMMAND	; Sum with the command vlaue and store in W
     movwf   y_col_inst, A
     
@@ -117,7 +125,8 @@ dsp_pos_head:  ; Figure out the row and column of the snake head
     ; Now x_temp has been divided by 8 (so this will be the x page) and the 
     ; carry variable contains the pixel to light up within this page (column)
     
-    movf    x_temp, W, A	; Move new x position into WREG
+    call    ret_x_head		; Move new x position into WREG
+    movwf   x_pos, A
     addlw   X_POS_COMMAND	; Sum with the command value and store in W
     movwf   x_row_inst, A
     
@@ -144,6 +153,7 @@ end_display:
     movf    temp, W, A		; Restore value from GLCD_Read into WREG
     
     iorwf   remain, W, A	; OR W and remain, store in W
+    movlw   00011110B		; TODO DELETE
     call    GLCD_Send_D
     
     movf    y_pos, W, A		; Move new y position into WREG
