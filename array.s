@@ -2,8 +2,9 @@
 
 extrn	x_pos, y_pos
     
-global	array_setup, snek_not_grow, snek_grow
-global	snek_len,
+global	array_setup, snek_not_grow, snek_grow, ret_x_tail, ret_y_tail
+global	ret_x_head, ret_y_head
+global	snek_len
     
 psect	udata_acs
 snek_len:	ds  1	    ; Reserve 1 byte for length of snake
@@ -142,9 +143,21 @@ ret_x_tail:	; Returns the x-position of the tali in WREG
     addwf   FSR0L, A	    ; Point FSR0 to last element (i.e. tail)
     movf    INDF0, W, A	    ; Move tail value to WREG
     lfsr    0, x_Arr	    ; Reset FSR0 to point to x_Arr
+    return
     
 ret_y_tail:	; Returns the y-position of the tail in WREG
     movf    snek_len, W, A	   
     addwf   FSR1L, A	    ; Point FSR1 to last element (i.e. tail)
     movf    INDF1, W, A	    ; Move tail value to WREG
     lfsr    1, y_Arr	    ; Reset FSR1 to point to y_Arr
+    return
+    
+ret_x_head:	; Returns the x-position of the head in WREG
+    lfsr    0, x_Arr	    
+    movf    INDF0, W, A
+    return
+    
+ret_y_head:	; Returns the y-position of the head in WREG
+    lfsr    1, y_Arr	    
+    movf    INDF1, W, A
+    return
