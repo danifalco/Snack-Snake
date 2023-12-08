@@ -67,7 +67,7 @@ snek_not_grow:
     _in_new_x:
 	lfsr	0, x_Arr	; Set FRS0 back to back to the first point
 	movff	x_pos, INDF0	
-	bra snek_not_grow_y		; Notice how we can't increase length yet, first
+	bra snek_not_grow_y	; Notice how we can't increase length yet, first
 				; deal with the y array
 	
 snek_not_grow_y:			; Same thing as x, but with y
