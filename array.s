@@ -10,6 +10,7 @@ psect	udata_acs
 snek_len:	ds  1	    ; Reserve 1 byte for length of snake
 loop_cnt:	ds  1	    ; Reserve 1 byte for a loop counter
 temp_:		ds  1	    ; Useful temp variable
+in_snek:	ds  1	    ; variable to check whether snek eats itself
 
 psect	udata_bank1	    ; We store the x-values array in bank 1
 x_Arr:		ds  0xFF    ; We can have a snake of length up to 256
@@ -68,8 +69,7 @@ array_setup:
 snek_not_grow:
     ; Shifts every value of the array to the right, puts the new value of x,y in
     ; the first array intexes. Does NOT increase snek_len. This will probably 
-    ; Run into trouble when snek_len>255 but hey
-    
+    ; Run into trouble when snek_len>255 but hey    
     movf    snek_len, W, A  ; Load snek length into W
     addwf   FSR0L, A	    ; Select the nth position of the list
     movlw   0x0
@@ -88,7 +88,7 @@ snek_not_grow:
     _in_new_x:
 	lfsr	0, x_Arr	; Set FRS0 back to back to the first point
 	movff	x_pos, INDF0	
-	bra snek_not_grow_y	; Notice how we can't increase length yet, first
+	bra	snek_not_grow_y	; Notice how we can't increase length yet, first
 				; deal with the y array
 	
 snek_not_grow_y:			; Same thing as x, but with y
@@ -184,13 +184,14 @@ ret_y_head:	; Returns the y-position of the head in WREG
     return
     
 check_if_in_snek:	; Checks if x_pos is in x_Arr and y_Arr: resets if yes
+    clrf    in_snek, A	    ; Clear check variable (see uses below)
     clrf    loop_cnt, A
     incf    loop_cnt, A
     check_x_loop:
 	movf    INDF0, W, A	; moves the value of first position in array to WREG
 	cpfseq  x_pos, A	; Compare if value is the same as x_pos, if so handle
 	bra	continue_loop_x	    ; x_pos is not in x_Arr, continue
-	bra	check_if_in_snek_y  ; x_pos somewhere in x_Arr, check for y
+	bra	in_x_arr  ; x_pos somewhere in x_Arr, check for y
 	continue_loop_x:
 	movf	snek_len, W, A	; Load snek_len to WREG
 	incf	loop_cnt, A	; Increase counter
@@ -198,7 +199,9 @@ check_if_in_snek:	; Checks if x_pos is in x_Arr and y_Arr: resets if yes
 	cpfslt	loop_cnt, A	; Check if counter has reached snek_len
 	bra	check_if_in_snek_y  ; These names are getting long...
 	bra	check_x_loop	
-	
+
+in_x_arr:
+    incf    in_snek, A		; x_value is true, increment in_snek and check y
 check_if_in_snek_y:
     lfsr    0, x_Arr		; Reset x_Arr pointer
     clrf    loop_cnt, A
@@ -207,7 +210,7 @@ check_if_in_snek_y:
 	movf	INDF1, W, A 
 	cpfseq	y_pos, A
 	bra	continue_loop_y
-	goto	Setup		; Snek ate itself, reset from begining
+	bra	snek_ate_itself		; Snek ate itself, reset from begining
 	continue_loop_y:
 	movf	snek_len, W, A
 	incf	loop_cnt, A
@@ -216,6 +219,11 @@ check_if_in_snek_y:
 	bra	finish_check
 	bra	check_y_loop
 
+snek_ate_itself:
+    incf    in_snek, A
 finish_check:
     lfsr    1, y_Arr		; Reset y_Arr pointer
+    movlw   2
+    cpfseq  in_snek, A		; If in_snek=2 snake ate itself so goto setup
     return			; Snek did not eat itself so proceed as usual
+    goto    Setup		
