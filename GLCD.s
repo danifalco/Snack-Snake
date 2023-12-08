@@ -103,7 +103,7 @@ GLCD_Read:
     ;call    LCD_delay_ms
     
     movff   PORTD, out_data	; temporarily output to out_data
-    movff   out_data, PORTE
+    ;movff   out_data, PORTE
     
     bcf	    LATB, GLCD_E, A	; End enable pulse
     bcf	    LATB, GLCD_RW, A	; set to low since write
