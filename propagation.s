@@ -70,11 +70,13 @@ propagate:  ; Propagate: 1 - Right, 2 - Left, 3 - Up, 4 - Down
     
     ;movff    x_pos, x_prev, A
     ;movff    y_pos, y_prev, A
+    movwf   temp, A		    ; Hold WREG in temp since it will change
     clrf    remain, A
     call    ret_x_head
     movwf   x_pos, A
     call    ret_y_head
     movwf   y_pos, A
+    movf    temp, W, A		    ; Move temp back to WREG for propagation
     
     cpfseq  one, A
     bra	    left
@@ -167,10 +169,6 @@ end_display:
 				; snek grow or snek not grow
     call    snek_grow		; We haven't deleted the last pixel so snek grow
     return    
-
- 
-    
-    
    
 dsp_pos_tail:	; Finds the row, col of the tail value (
     clrf    remain, A
@@ -235,16 +233,7 @@ end_display_:
 
     call    snek_not_grow	; We delete the last pixel so snek not grow
     return   
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+       
 mv_right:
     movlw   63
     cpfslt  y_pos, A
