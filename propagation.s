@@ -3,7 +3,7 @@
 global	propagation_setup, init_position, propagate, dsp_pos_head
 global	mv_right, mv_left, mv_up, mv_down
 global	remain, temp, counter, x_pos, y_pos
-global	x_row_inst, y_col_inst
+global	x_row_inst, y_col_inst, x_tail_old, y_tail_old, remain, x_temp
 
 extrn	GLCD_Send_I, GLCD_Send_D, GLCD_Read, vert_line
 extrn	ret_x_tail, ret_y_tail, ret_x_head, ret_y_head, snek_grow, snek_not_grow
@@ -71,6 +71,10 @@ propagate:  ; Propagate: 1 - Right, 2 - Left, 3 - Up, 4 - Down
     ;movff    x_pos, x_prev, A
     ;movff    y_pos, y_prev, A
     clrf    remain, A
+    call    ret_x_head
+    movwf   x_pos, A
+    call    ret_y_head
+    movwf   y_pos, A
     
     cpfseq  one, A
     bra	    left
@@ -100,8 +104,8 @@ dsp_pos_head:  ; Figure out the row and column of the snake head
     call    ret_y_tail
     movwf   y_tail_old, A	; Store the old tail position into its var
     
-    call    ret_y_head		; Move new y position into WREG
-    movwf   y_pos, A
+    movf    y_pos, W, A		; Move new y position into WREG
+    ;movwf   y_pos, A
     addlw   Y_POS_COMMAND	; Sum with the command vlaue and store in W
     movwf   y_col_inst, A
     
@@ -125,8 +129,7 @@ dsp_pos_head:  ; Figure out the row and column of the snake head
     ; Now x_temp has been divided by 8 (so this will be the x page) and the 
     ; carry variable contains the pixel to light up within this page (column)
     
-    call    ret_x_head		; Move new x position into WREG
-    movwf   x_pos, A
+    movf    x_temp, W, A		; Move new x position into WREG
     addlw   X_POS_COMMAND	; Sum with the command value and store in W
     movwf   x_row_inst, A
     
@@ -153,7 +156,6 @@ end_display:
     movf    temp, W, A		; Restore value from GLCD_Read into WREG
     
     iorwf   remain, W, A	; OR W and remain, store in W
-    movlw   00011110B		; TODO DELETE
     call    GLCD_Send_D
     
     movf    y_pos, W, A		; Move new y position into WREG
@@ -171,6 +173,7 @@ end_display:
     
    
 dsp_pos_tail:	; Finds the row, col of the tail value (
+    clrf    remain, A
     call    ret_y_tail		; Move y tail position into WREG
     addlw   Y_POS_COMMAND	; Sum with the command vlaue and store in W
     movwf   y_col_inst, A
@@ -221,7 +224,8 @@ end_display_:
     call    GLCD_Send_I		; Select y column
 
     movf    temp, W, A		; Restore value from GLCD_Read into WREG
-
+    
+    bsf	    CARRY
     subfwb  remain, W, A	; OR W and remain, store in W
     call    GLCD_Send_D
 
