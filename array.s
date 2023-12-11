@@ -5,6 +5,7 @@ extrn	x_pos, y_pos, Setup
 global	array_setup, snek_not_grow, snek_grow, ret_x_tail, ret_y_tail
 global	ret_x_head, ret_y_head
 global	snek_len, check_if_in_snek
+global	x_Arr, y_Arr, in_snek, loop_cnt
     
 psect	udata_acs
 snek_len:	ds  1	    ; Reserve 1 byte for length of snake
@@ -197,7 +198,7 @@ check_if_in_snek:	; Checks if x_pos is in x_Arr and y_Arr: resets if yes
 	incf	FSR0L, A	; Move array pointer to next location
 	incf	FSR1L, A	; Also move y_arr pointer
 	cpfslt	loop_cnt, A	; Check if counter has reached snek_len
-	return			; These names are getting long...
+	bra	end_check			; These names are getting long...
 	bra	check_x_loop	
 
 in_x_arr:   ; x_pos == x_Arr[i], so check if y_pos == y_Arr[i]
@@ -206,3 +207,8 @@ in_x_arr:   ; x_pos == x_Arr[i], so check if y_pos == y_Arr[i]
     bra	    continue_loop_x	; If it's not in y_arr, keep checking until done
     goto    Setup	    
     incf    in_snek, A		; x_value is true, increment in_snek and check y 
+
+end_check:	    ; x_pos and y_pos not in snake. Reset counters and return
+    lfsr    0, x_Arr	    ; Reset FSR0 to point to x_Arr
+    lfsr    1, y_Arr	    ; Reset FSR1 to point to y_Arr
+    return
