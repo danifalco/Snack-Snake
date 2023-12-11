@@ -1,7 +1,7 @@
 #include <xc.inc>
 
 global	GLCD_Setup, GLCD_Send_I, GLCD_Send_D, LCM_Reset, LCD_delay_ms, GLCD_Read
-global	out_data
+global	out_data, LCM_Reset
     
 extrn	vert_line
 
