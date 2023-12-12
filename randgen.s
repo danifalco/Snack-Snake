@@ -52,7 +52,7 @@ spawn_food: ; Generates random position for x and y for the food to spawn in
     call    random_int
     movff   ranx, food_x
     movff   rany, food_y
-
+    
     call    check_if_in_snek_food   ; Check if rand points are inside snek
 				    ; Keep trying until false
     call    display_food
@@ -90,39 +90,6 @@ end_check_food:	    ; x_pos and y_pos not in snake. Reset counters and return
     return
     
 temp_thing:
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    movlw   250
-    call    LCD_delay_ms
-    call    vert_line
     goto    spawn_food
     
 display_food:
@@ -134,7 +101,7 @@ display_food:
     movwf   y_col_inst, A
     
     ;	********** X-Position Code **********
-    movff   food_y, x_temp, A	; Move the x position to its temporary variable
+    movff   food_x, x_temp, A	; Move the x position to its temporary variable
     
     bcf	    CARRY		; Clear the carry flag ready for rotation
     rrcf    x_temp, F, A	; Divide x_temp by 8 (i.e. divide by 2 3 times)
@@ -160,14 +127,14 @@ display_food:
     movlw   00000001B
     movwf   temp, A
     movlw   0x0
-    pos_loop:
+    pos_loop_:
 	cpfsgt	remain, A
-	bra	end_display
+	bra	end_display_
 	addlw	1
 	rlncf	temp, F, A
-	bra	pos_loop
+	bra	pos_loop_
 	
-end_display:
+end_display_:
     movff   temp, remain	; Free temp by moving temp to remain
     
     call    dirty_read
