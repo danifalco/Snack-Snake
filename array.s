@@ -109,7 +109,7 @@ snek_not_grow_y:			; Same thing as x, but with y
 	incf	loop_cnt, A	
 	bra	snek_not_grow_loop_y
     _in_new_y:
-	lfsr	0, y_Arr	
+	lfsr	1 , y_Arr	
 	movff	y_pos, INDF1
 	return			    ; Notice we do not increase snek_len
 	
@@ -158,6 +158,7 @@ snek_grow_y:			; Same thing as x, but with y
 	lfsr	0, y_Arr	
 	movff	y_pos, INDF1
 	incf	snek_len, A	; This time, increase snek_len
+	movff	snek_len, PORTF
 	return
 	
 ret_x_tail:	; Returns the x-position of the tali in WREG
@@ -198,7 +199,7 @@ check_if_in_snek:	; Checks if x_pos is in x_Arr and y_Arr: resets if yes
 	incf	FSR0L, A	; Move array pointer to next location
 	incf	FSR1L, A	; Also move y_arr pointer
 	cpfslt	loop_cnt, A	; Check if counter has reached snek_len
-	bra	end_check			; These names are getting long...
+	bra	end_check	
 	bra	check_x_loop	
 
 in_x_arr:   ; x_pos == x_Arr[i], so check if y_pos == y_Arr[i]
