@@ -6,6 +6,7 @@ global	food_x, food_y
 extrn	x_pos, y_pos, check_if_in_snek, in_snek, loop_cnt, snek_len, x_Arr
 extrn	y_Arr
 extrn	LCD_delay_ms
+extrn	vert_line
 ; Below is borrowed from propagation.s
 extrn	Y_POS_COMMAND, X_POS_COMMAND, y_col_inst, x_row_inst, x_temp, temp
 extrn	dirty_read, GLCD_Send_I, GLCD_Send_D, remain
@@ -22,6 +23,8 @@ psect	randgen_code,class=CODE
     
 randgen_setup:
     clrf    T0CON, A	    ; Reset everything
+    bsf	    T0CON, 2, A	    ; Make timer slowish
+    bsf	    T0CON, 1, A	    ; Make timer slowish
     bsf	    T0CON, 3, A	    ; I think this increases count speed
     ;	    4		    ; We don't really care about bit 4 see pg186
     bcf	    T0CON, 5, A	    ; Timer uses internal clock instead of external
@@ -36,6 +39,9 @@ randgen_setup:
     bcf	    T1CON, 5, A	    ; Timer uses internal clock instead of external
     bsf	    T1CON, 6, A	    ; Timer configured as an 8-bit counter
     bsf	    T1CON, 7, A	    ; Enables Timer1
+    
+;    clrf    T4CON, A	    ; Reset everything
+;    bsf	    T4CON, 1, A	    ; Turn on timer4
     
     return
     
@@ -67,6 +73,7 @@ check_if_in_snek_food:	; Checks if x_pos is in x_Arr and y_Arr: retries if yes
 	movf    INDF0, W, A	; moves the value of first position in array to WREG
 	cpfseq  food_x, A	; Compare if value is the same as x_pos, if so handle
 	bra	continue_loop_x_food    ; x_pos is not in x_Arr, continue
+	;call	vert_line
 	bra	in_x_arr_food  ; x_pos somewhere in x_Arr, check for y
 	continue_loop_x_food:
 	movf	snek_len, W, A	; Load snek_len to WREG
@@ -74,16 +81,20 @@ check_if_in_snek_food:	; Checks if x_pos is in x_Arr and y_Arr: retries if yes
 	incf	FSR0L, A	; Move array pointer to next location
 	incf	FSR1L, A	; Also move y_arr pointer
 	cpfslt	loop_cnt, A	; Check if counter has reached snek_len
-	bra	end_check_food			; These names are getting long...
+	bra	end_check_food	
 	bra	check_x_loop_food	
 
 in_x_arr_food:   ; x_pos == x_Arr[i], so check if y_pos == y_Arr[i]
     movf    INDF1, W, A
     cpfseq  food_y, A		; Compare if value is same as y_pos if so handle
     bra	    continue_loop_x_food	; If it's not in y_arr, keep checking until done
-    goto    spawn_food	    ; TODO CHANGE TO spawn_food	    
+    bra	    try_again		; TODO CHANGE TO spawn_food	    
     incf    in_snek, A		; x_value is true, increment in_snek and check y 
 
+try_again:
+    lfsr    0, x_Arr
+    lfsr    1, y_Arr
+    goto    spawn_food
 end_check_food:	    ; x_pos and y_pos not in snake. Reset counters and return
     lfsr    0, x_Arr	    ; Reset FSR0 to point to x_Arr
     lfsr    1, y_Arr	    ; Reset FSR1 to point to y_Arr
