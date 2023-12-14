@@ -24,10 +24,9 @@ Setup:
     call    init_position
     call    spawn_food
     
-    
     movlw   0x0		    ; PortD all outputs
     movwf   TRISE, A
-    
+    movwf   TRISF, A
 main:
     nop
     call    key_reader
@@ -36,7 +35,7 @@ main:
     ;call    propagate
     ;movlw   50
     ;call    LCD_delay_ms
-    ;movlw   250
+    ;movlw   50
     ;call    LCD_delay_ms
   
     nop
