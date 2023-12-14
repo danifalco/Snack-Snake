@@ -155,7 +155,7 @@ snek_grow_y:			; Same thing as x, but with y
 	incf	loop_cnt, A	
 	bra	snek_grow_loop_y
     in_new_y:
-	lfsr	0, y_Arr	
+	lfsr	1, y_Arr	
 	movff	y_pos, INDF1
 	incf	snek_len, A	; This time, increase snek_len
 	movff	snek_len, PORTF
@@ -206,7 +206,7 @@ in_x_arr:   ; x_pos == x_Arr[i], so check if y_pos == y_Arr[i]
     movf    INDF1, W, A
     cpfseq  y_pos, A		; Compare if value is same as y_pos if so handle
     bra	    continue_loop_x	; If it's not in y_arr, keep checking until done
-    goto    Setup	    
+    RESET	    
     incf    in_snek, A		; x_value is true, increment in_snek and check y 
 
 end_check:	    ; x_pos and y_pos not in snake. Reset counters and return
