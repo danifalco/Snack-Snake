@@ -32,25 +32,26 @@ randgen_setup:
     bsf	    T0CON, 7, A	    ; Enables Timer0
     
     clrf    T1CON, A	    ; Reset everything
-    bsf	    T1CON, 3, A	    ; I think this increases count speed
-    bsf	    T1CON, 2, A	    ; This makes the count speed 16x slower than x for extra randomness
+    bsf	    T1CON, 4, A
+    bsf	    T1CON, 5, A	    ; Timer uses internal clock instead of external
     bsf	    T1CON, 0, A
-    ;	    4		    ; We don't really care about bit 4 see pg186
-    bcf	    T1CON, 5, A	    ; Timer uses internal clock instead of external
-    bsf	    T1CON, 6, A	    ; Timer configured as an 8-bit counter
-    bsf	    T1CON, 7, A	    ; Enables Timer1
-    
-;    clrf    T4CON, A	    ; Reset everything
-;    bsf	    T4CON, 1, A	    ; Turn on timer4
     
     return
     
 random_int:	    ; Generates random number between 0 and 63 (inclusive)
     movff   TMR0, ranx	; Take a reading off of timer
-    movff   TMR1, rany	
+    movff   TMR1L, rany	
     movlw   00111111B	
     andwf   ranx, F, A	; Make rand number something between 0-63
     andwf   rany, F, A
+    ;movlw   30
+    ;addwf   rany, F, A
+    
+    ;movlw   00111111B
+    ;movlw   00111111B
+	;movlw   4
+	;movwf   rany, A
+    ;andwf   rany, F, A
     return
     
 spawn_food: ; Generates random position for x and y for the food to spawn in
@@ -66,7 +67,7 @@ spawn_food: ; Generates random position for x and y for the food to spawn in
     
     
 check_if_in_snek_food:	; Checks if x_pos is in x_Arr and y_Arr: retries if yes
-    ; A very close copy to subroutine in arrays.s
+    ; A very close copy of subroutine in arrays.s
     clrf    in_snek, A	    ; Clear check variable (see uses below)
     clrf    loop_cnt, A
     check_x_loop_food:
@@ -88,7 +89,7 @@ in_x_arr_food:   ; x_pos == x_Arr[i], so check if y_pos == y_Arr[i]
     movf    INDF1, W, A
     cpfseq  food_y, A		; Compare if value is same as y_pos if so handle
     bra	    continue_loop_x_food	; If it's not in y_arr, keep checking until done
-    bra	    try_again		; TODO CHANGE TO spawn_food	    
+    bra	    try_again			    
     incf    in_snek, A		; x_value is true, increment in_snek and check y 
 
 try_again:
