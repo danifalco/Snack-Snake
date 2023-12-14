@@ -37,28 +37,28 @@ key_reader:
 ; Decode
 is_2:	    ; This is up, so return 3 to WREG
     movlw   0xED
-    cpfseq  key_val
+    cpfseq  key_val, A
     bra	    is_4
     movlw   3
     bra	    output
     
 is_4:	    ; This is left, so return 2 to WREG
     movlw   0xDE
-    cpfseq  key_val
+    cpfseq  key_val, A
     bra	    is_6
     movlw   2
     bra	    output
     
 is_6:	    ; This is right, so return 1 to WREG
     movlw   0xDB
-    cpfseq  key_val
+    cpfseq  key_val, A
     bra	    is_8
     movlw   1
     bra	    output
     
 is_8:	    ; This is down so return 4
     movlw   0xBD
-    cpfseq  key_val
+    cpfseq  key_val, A
     bra	    invalid
     movlw   4
     bra	    output
